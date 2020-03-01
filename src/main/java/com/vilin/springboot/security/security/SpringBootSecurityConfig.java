@@ -2,6 +2,7 @@ package com.vilin.springboot.security.security;
 
 import com.vilin.springboot.security.authentication.SecurityAuthenticationFailureHandler;
 import com.vilin.springboot.security.authentication.SecurityAuthenticationSuccessHandler;
+import com.vilin.springboot.security.filter.VerificationCodeFilter;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import javax.sql.DataSource;
 
@@ -64,16 +66,16 @@ public class SpringBootSecurityConfig extends WebSecurityConfigurerAdapter {
 //                .and().csrf().disable();
 //    }
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-                .antMatchers("/admin/api/**").hasRole("ADMIN")
-                .antMatchers("/user/api/**").hasRole("USER")
-                .antMatchers("/app/api/**").permitAll()
-                .anyRequest().authenticated()
-                .and()
-                .formLogin().permitAll();
-    }
+//    @Override
+//    protected void configure(HttpSecurity http) throws Exception {
+//        http.authorizeRequests()
+//                .antMatchers("/admin/api/**").hasRole("ADMIN")
+//                .antMatchers("/user/api/**").hasRole("USER")
+//                .antMatchers("/app/api/**").permitAll()
+//                .anyRequest().authenticated()
+//                .and()
+//                .formLogin().permitAll();
+//    }
 
 //    @Bean
 //    public UserDetailsService userDetailsService() {
@@ -98,6 +100,26 @@ public class SpringBootSecurityConfig extends WebSecurityConfigurerAdapter {
 //        }
 //        return manager;
 //    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.authorizeRequests()
+                .antMatchers("/admin/api/**").hasRole("ADMIN")
+                .antMatchers("/user/api/**").hasRole("USER")
+                .antMatchers("/app/api/**", "/captcha.jpg").permitAll()
+                .anyRequest().authenticated()
+                .and()
+                .formLogin()
+                .failureHandler(new SecurityAuthenticationFailureHandler())
+                .successHandler(new SecurityAuthenticationSuccessHandler())
+                .loginPage("/myLogin.html")
+                .loginProcessingUrl("/login")
+                .permitAll()
+                .and()
+                .csrf().disable();
+        // 将过滤器添加在UsernamePasswordAuthenticationFilter之前
+        http.addFilterBefore(new VerificationCodeFilter(), UsernamePasswordAuthenticationFilter.class);
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
