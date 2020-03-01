@@ -1,4 +1,4 @@
-package com.vilin.springboot.security.security;
+package com.vilin.springboot.security.config;
 
 import com.vilin.springboot.security.authentication.SecurityAuthenticationFailureHandler;
 import com.vilin.springboot.security.authentication.SecurityAuthenticationSuccessHandler;
@@ -7,6 +7,8 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationDetailsSource;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,12 +21,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 
-//@Configuration
 @EnableWebSecurity
-@MapperScan("com.vilin.springboot.security.mapper")
 public class SpringBootSecurityConfig extends WebSecurityConfigurerAdapter {
 //    @Override
 //    protected void configure(HttpSecurity http) throws Exception {
@@ -101,6 +103,39 @@ public class SpringBootSecurityConfig extends WebSecurityConfigurerAdapter {
 //        return manager;
 //    }
 
+//    @Override
+//    protected void configure(HttpSecurity http) throws Exception {
+//        http.authorizeRequests()
+//                .antMatchers("/admin/api/**").hasRole("ADMIN")
+//                .antMatchers("/user/api/**").hasRole("USER")
+//                .antMatchers("/app/api/**", "/captcha.jpg").permitAll()
+//                .anyRequest().authenticated()
+//                .and()
+//                .formLogin()
+//                .failureHandler(new SecurityAuthenticationFailureHandler())
+//                .successHandler(new SecurityAuthenticationSuccessHandler())
+//                .loginPage("/myLogin.html")
+//                .loginProcessingUrl("/login")
+//                .permitAll()
+//                .and()
+//                .csrf().disable();
+//        // 将过滤器添加在UsernamePasswordAuthenticationFilter之前
+//        http.addFilterBefore(new VerificationCodeFilter(), UsernamePasswordAuthenticationFilter.class);
+//    }
+
+
+    @Autowired
+    private AuthenticationDetailsSource<HttpServletRequest, WebAuthenticationDetails> myWebAuthenticationDetailsSource;
+
+    @Autowired
+    private AuthenticationProvider authenticationProvider;
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        // 应用AuthenticationProvider
+        auth.authenticationProvider(authenticationProvider);
+    }
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
@@ -110,6 +145,7 @@ public class SpringBootSecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
+                .authenticationDetailsSource(myWebAuthenticationDetailsSource)
                 .failureHandler(new SecurityAuthenticationFailureHandler())
                 .successHandler(new SecurityAuthenticationSuccessHandler())
                 .loginPage("/myLogin.html")
@@ -117,12 +153,12 @@ public class SpringBootSecurityConfig extends WebSecurityConfigurerAdapter {
                 .permitAll()
                 .and()
                 .csrf().disable();
-        // 将过滤器添加在UsernamePasswordAuthenticationFilter之前
-        http.addFilterBefore(new VerificationCodeFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return NoOpPasswordEncoder.getInstance();
     }
+
+
 }
